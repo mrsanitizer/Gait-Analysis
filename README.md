@@ -1,4 +1,4 @@
-README - Combined_graph.py
+# Readme
 
 This script analyzes a video of human movement using MediaPipe Pose and OpenCV, extracts joint angles and gait metrics, and produces:
 - An annotated video with angle overlays
@@ -43,7 +43,11 @@ INSTALLATION
 ------------
 To install all required Python packages, run:
 
-pip install opencv-python mediapipe numpy matplotlib
+```pip install opencv-python mediapipe numpy matplotlib```
+
+Or, if you have a requirements.txt file, run:
+
+```pip install -r requirements.txt```
 
 TROUBLESHOOTING:
 ----------------
