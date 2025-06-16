@@ -1,12 +1,4 @@
 def analyze_video(video_path):
-    """
-    Analyzes a video to compute the angles for hip flexion, knee flexion, and ankle dorsiflexion/plantarflexion.
-    Args:
-        video_path (str): Path to the input video file.
-    Returns:
-        CSV file and generates plots for the angles.
-        Generates an annotated video with the computed angles.
-    """
     import cv2
     import mediapipe as mp
     import math
@@ -16,166 +8,189 @@ def analyze_video(video_path):
     import csv
 
     def hip_flexion(hips, knees):
-        dx = hips[0] - knees[0]
-        dy = hips[1] - knees[1]
-        if dx == 0:
+        l1 = hips[1] - knees[1]
+        l2 = hips[0] - knees[0]
+        l3 = np.sqrt((hips[0] - knees[0])**2 + (hips[1] - knees[1])**2)
+        if (l1 == 0 or l2 == l3):
             return 0
-        angle = math.degrees(math.atan2(abs(dy), abs(dx)))
-        # convert to flexion angle
-        return 90 - angle
-
+        angle = math.atan(l1 / l2) * 180 / math.pi
+        return 90- abs(angle)
+    
     def knee_flexion(hips, knees, ankles):
-        a = np.linalg.norm(knees - ankles)
-        b = np.linalg.norm(hips - ankles)
-        c = np.linalg.norm(knees - hips)
-        if a == 0 or c == 0:
+        a = np.sqrt((knees[0] - ankles[0])**2 + (knees[1] - ankles[1])**2)
+        b = np.sqrt((hips[0] - ankles[0])**2 + (hips[1] - ankles[1])**2)
+        c = np.sqrt((knees[0] - hips[0])**2 + (knees[1] - hips[1])**2)
+        angle = math.acos((a**2 + c**2 - b**2) / (2 * a * c))
+        return abs(angle * 180 / math.pi)
+    
+    def ankle_up(heels, foot_index):
+        if(heels[1] > foot_index[1]):
             return 0
-        angle = math.degrees(math.acos((a**2 + c**2 - b**2) / (2 * a * c)))
-        return angle
+        x = heels[0] - foot_index[0]
+        y = heels[1] - foot_index[1]
+        angle = math.atan(y/x) * 180 / math.pi
+        return abs(angle)
 
-    def ankle_up(heel, foot_idx):
-        # dorsiflexion
-        if heel[1] > foot_idx[1]:
+    def ankle_down(heels, foot_index):
+        if(heels[1] < foot_index[1]):
             return 0
-        dx = heel[0] - foot_idx[0]
-        dy = heel[1] - foot_idx[1]
-        if dx == 0:
-            return 0
-        return abs(math.degrees(math.atan2(dy, dx)))
+        x = foot_index[0] - heels[0]
+        y = foot_index[1] - heels[1]
+        angle = math.atan(y/x) * 180 / math.pi
+        return abs(angle)
 
-    def ankle_down(heel, foot_idx):
-        # plantarflexion
-        if heel[1] < foot_idx[1]:
-            return 0
-        dx = foot_idx[0] - heel[0]
-        dy = foot_idx[1] - heel[1]
-        if dx == 0:
-            return 0
-        return abs(math.degrees(math.atan2(dy, dx)))
-
-    # Setup MediaPipe
+    # Setup
     mp_pose = mp.solutions.pose
-    pose = mp_pose.Pose(min_detection_confidence=0.5,
-                         min_tracking_confidence=0.5,
-                         model_complexity=0)
+    pose = mp_pose.Pose(min_detection_confidence=0.5, min_tracking_confidence=0.5, model_complexity=0)
 
     cap = cv2.VideoCapture(video_path)
-    fps = cap.get(cv2.CAP_PROP_FPS)
+    cap.set(cv2.CAP_PROP_ORIENTATION_AUTO, 1)
 
-    # Data lists
     timestamps = []
-    left_hip_list = []
-    right_hip_list = []
-    left_knee_list = []
-    right_knee_list = []
+    left_hip_flexion_list = []
+    right_hip_flexion_list = []
+    left_knee_flexion_list = []
+    right_knee_flexion_list = []
     left_ankle_up_list = []
     right_ankle_up_list = []
     left_ankle_down_list = []
     right_ankle_down_list = []
+
     csv_data = []
 
-    # Video writer for annotated output
+    # Matplotlib plot (not live)
+    fig, axs = plt.subplots(4, 1, figsize=(10, 16), sharex=True)
+    axs[0].set_ylabel('Hip Flexion (deg)')
+    axs[1].set_ylabel('Knee Flexion (deg)')
+    axs[2].set_ylabel('Ankle Up (deg)')
+    axs[3].set_ylabel('Ankle Down (deg)')
+    axs[3].set_xlabel('Time (s)')
+    axs[0].set_title('Joint Angles Over Time')
+
+    # Annotated video writer setup
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out_path = os.path.join(os.path.dirname(video_path), 'annotated_output.mp4')
+    annotated_video_path = os.path.join(os.path.dirname(video_path), "annotated_output.mp4")
+    fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    out = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
+    out = cv2.VideoWriter(annotated_video_path, fourcc, fps, (width, height))
 
-    frame_idx = 0
+    frame_index = 0
+
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
-        t = frame_idx / fps
+
+        timestamp = round(frame_index / fps, 3)
+
         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         image.flags.writeable = False
-        res = pose.process(image)
+        results = pose.process(image)
         image.flags.writeable = True
 
-        if res.pose_landmarks:
-            lm = res.pose_landmarks.landmark
-            def get(idx): return np.array([lm[idx].x, lm[idx].y, lm[idx].z])
-            vis = lambda idx: lm[idx].visibility > 0.3
-            ids = [mp_pose.PoseLandmark.LEFT_HIP, mp_pose.PoseLandmark.RIGHT_HIP,
-                   mp_pose.PoseLandmark.LEFT_KNEE, mp_pose.PoseLandmark.RIGHT_KNEE,
-                   mp_pose.PoseLandmark.LEFT_HEEL, mp_pose.PoseLandmark.RIGHT_HEEL,
-                   mp_pose.PoseLandmark.LEFT_FOOT_INDEX, mp_pose.PoseLandmark.RIGHT_FOOT_INDEX]
-            if all(vis(i) for i in ids):
-                lh = get(mp_pose.PoseLandmark.LEFT_HIP)
-                rh = get(mp_pose.PoseLandmark.RIGHT_HIP)
-                lk = get(mp_pose.PoseLandmark.LEFT_KNEE)
-                rk = get(mp_pose.PoseLandmark.RIGHT_KNEE)
-                lh_ank = get(mp_pose.PoseLandmark.LEFT_HEEL)
-                rh_ank = get(mp_pose.PoseLandmark.RIGHT_HEEL)
-                lf = get(mp_pose.PoseLandmark.LEFT_FOOT_INDEX)
-                rf = get(mp_pose.PoseLandmark.RIGHT_FOOT_INDEX)
+        if results.pose_landmarks:
+            lm = results.pose_landmarks.landmark
+            def get_coords(idx): return np.array([lm[idx].x, lm[idx].y, lm[idx].z])
+            def is_visible(idx): return lm[idx].visibility > 0.3
 
-                # compute angles
-                lhip = hip_flexion(lh, lk)
-                rhip = hip_flexion(rh, rk)
-                lknee = knee_flexion(lh, lk, lf)
-                rknee = knee_flexion(rh, rk, rf)
-                lan_up = ankle_up(lh_ank, lf)
-                ran_up = ankle_up(rh_ank, rf)
-                lan_down = ankle_down(lh_ank, lf)
-                ran_down = ankle_down(rh_ank, rf)
+            key_landmarks = [
+                mp_pose.PoseLandmark.LEFT_HIP,
+                mp_pose.PoseLandmark.RIGHT_HIP,
+                mp_pose.PoseLandmark.LEFT_KNEE,
+                mp_pose.PoseLandmark.RIGHT_KNEE,
+                mp_pose.PoseLandmark.LEFT_ANKLE,
+                mp_pose.PoseLandmark.RIGHT_ANKLE,
+                mp_pose.PoseLandmark.LEFT_FOOT_INDEX,
+                mp_pose.PoseLandmark.RIGHT_FOOT_INDEX,
+                mp_pose.PoseLandmark.LEFT_HEEL,
+                mp_pose.PoseLandmark.RIGHT_HEEL
+            ]
 
-                # append for CSV and plotting
-                timestamps.append(t)
-                left_hip_list.append(lhip)
-                right_hip_list.append(rhip)
-                left_knee_list.append(lknee)
-                right_knee_list.append(rknee)
-                left_ankle_up_list.append(lan_up)
-                right_ankle_up_list.append(ran_up)
-                left_ankle_down_list.append(lan_down)
-                right_ankle_down_list.append(ran_down)
-                csv_data.append([t, lhip, rhip, lknee, rknee, lan_up, ran_up, lan_down, ran_down])
+            if all(is_visible(i) for i in key_landmarks):
+                left_hip = get_coords(mp_pose.PoseLandmark.LEFT_HIP)
+                right_hip = get_coords(mp_pose.PoseLandmark.RIGHT_HIP)
+                left_knee = get_coords(mp_pose.PoseLandmark.LEFT_KNEE)
+                right_knee = get_coords(mp_pose.PoseLandmark.RIGHT_KNEE)
+                left_ankle = get_coords(mp_pose.PoseLandmark.LEFT_ANKLE)
+                right_ankle = get_coords(mp_pose.PoseLandmark.RIGHT_ANKLE)
+                left_heel = get_coords(mp_pose.PoseLandmark.LEFT_HEEL)
+                right_heel = get_coords(mp_pose.PoseLandmark.RIGHT_HEEL)
+                left_foot_idx = get_coords(mp_pose.PoseLandmark.LEFT_FOOT_INDEX)
+                right_foot_idx = get_coords(mp_pose.PoseLandmark.RIGHT_FOOT_INDEX)
 
-                # annotate frame
-                mp.solutions.drawing_utils.draw_landmarks(frame, res.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+                left_hip_flexion = hip_flexion(left_hip, left_knee)
+                right_hip_flexion = hip_flexion(right_hip, right_knee)
+                left_knee_flexion = knee_flexion(left_hip, left_knee, left_ankle)
+                right_knee_flexion = knee_flexion(right_hip, right_knee, right_ankle)
+                left_ankle_up = ankle_up(left_heel, left_foot_idx)
+                right_ankle_up = ankle_up(right_heel, right_foot_idx)
+                left_ankle_down = ankle_down(left_heel, left_foot_idx)
+                right_ankle_down = ankle_down(right_heel, right_foot_idx)
+
+                # Append for plotting
+                timestamps.append(timestamp)
+                left_hip_flexion_list.append(left_hip_flexion)
+                right_hip_flexion_list.append(right_hip_flexion)
+                left_knee_flexion_list.append(left_knee_flexion)
+                right_knee_flexion_list.append(right_knee_flexion)
+                left_ankle_up_list.append(left_ankle_up)
+                right_ankle_up_list.append(right_ankle_up)
+                left_ankle_down_list.append(left_ankle_down)
+                right_ankle_down_list.append(right_ankle_down)
+
+                csv_data.append([
+                    timestamp,
+                    left_hip_flexion,
+                    right_hip_flexion,
+                    left_knee_flexion,
+                    right_knee_flexion,
+                    left_ankle_up,
+                    right_ankle_up,
+                    left_ankle_down,
+                    right_ankle_down
+                ])
+
+                # Draw landmarks
+                mp.solutions.drawing_utils.draw_landmarks(
+                    frame, results.pose_landmarks, mp_pose.POSE_CONNECTIONS)
+
+                # Overlay text
+                y_offset = 30
+                line_height = 30
+                for text in [
+                    f"L Hip: {left_hip_flexion:.1f}",
+                    f"R Hip: {right_hip_flexion:.1f}",
+                    f"L Knee: {left_knee_flexion:.1f}",
+                    f"R Knee: {right_knee_flexion:.1f}",
+                    f"L Ankle Up: {left_ankle_up:.1f}",
+                    f"R Ankle Up: {right_ankle_up:.1f}",
+                    f"L Ankle Down: {left_ankle_down:.1f}",
+                    f"R Ankle Down: {right_ankle_down:.1f}"
+                ]:
+                    cv2.putText(frame, text, (30, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+                    y_offset += line_height
 
         out.write(frame)
-        frame_idx += 1
+        frame_index += 1
 
     cap.release()
     out.release()
     pose.close()
 
-    # write CSV
-    csv_path = os.path.join(os.path.dirname(video_path), 'output_data.csv')
-    with open(csv_path, 'w', newline='') as f:
-        w = csv.writer(f)
-        w.writerow(['time','left_hip','right_hip','left_knee','right_knee',
-                    'left_ankle_up','right_ankle_up','left_ankle_down','right_ankle_down'])
-        w.writerows(csv_data)
+    # Save CSV
+    csv_output_path = os.path.join(os.path.dirname(video_path), "output_data.csv")
+    with open(csv_output_path, "w", newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow([
+            "timestamp", "left_hip_flexion", "right_hip_flexion",
+            "left_knee_flexion", "right_knee_flexion",
+            "left_ankle_up", "right_ankle_up",
+            "left_ankle_down", "right_ankle_down"
+        ])
+        writer.writerows(csv_data)
 
-    # plot and save each graph
-    metrics = [
-        ('left_hip', left_hip_list),
-        ('right_hip', right_hip_list),
-        ('left_knee', left_knee_list),
-        ('right_knee', right_knee_list),
-        ('left_ankle_up', left_ankle_up_list),
-        ('right_ankle_up', right_ankle_up_list),
-        ('left_ankle_down', left_ankle_down_list),
-        ('right_ankle_down', right_ankle_down_list)
-    ]
-    image_paths = {}
-    for name, data in metrics:
-        fig, ax = plt.subplots(figsize=(8,4))
-        ax.plot(timestamps, data, label=name)
-        ax.set_xlabel('Time (s)')
-        ax.set_ylabel('Angle (deg)')
-        ax.set_title(f'{name.replace("_", " ").title()} Over Time')
-        ax.legend()
-        img_path = os.path.join(os.path.dirname(video_path), f'{name}_graph.png')
-        fig.savefig(img_path)
-        plt.close(fig)
-        image_paths[name] = img_path
-
-    # To get all the plots in a single image
-    """
+    # Plot graphs for all metrics
     axs[0].plot(timestamps, left_hip_flexion_list, label="Left Hip", color="blue")
     axs[0].plot(timestamps, right_hip_flexion_list, label="Right Hip", color="red")
     axs[0].legend()
@@ -195,14 +210,18 @@ def analyze_video(video_path):
     graph_image_path = os.path.join(os.path.dirname(video_path), "graph.png")
     fig.savefig(graph_image_path)
     plt.close(fig)
-    """
 
-    summary = {
-        'avg_left_hip': float(np.mean(left_hip_list)),
-        'avg_right_hip': float(np.mean(right_hip_list)),
-        'avg_left_knee': float(np.mean(left_knee_list)),
-        'avg_right_knee': float(np.mean(right_knee_list))
+    result_summary = {
+        "avg_left_hip_flexion": round(np.mean(left_hip_flexion_list), 2) if left_hip_flexion_list else 0,
+        "avg_right_hip_flexion": round(np.mean(right_hip_flexion_list), 2) if right_hip_flexion_list else 0,
+        "avg_left_knee_flexion": round(np.mean(left_knee_flexion_list), 2) if left_knee_flexion_list else 0,
+        "avg_right_knee_flexion": round(np.mean(right_knee_flexion_list), 2) if right_knee_flexion_list else 0,
+        "avg_left_ankle_up": round(np.mean(left_ankle_up_list), 2) if left_ankle_up_list else 0,
+        "avg_right_ankle_up": round(np.mean(right_ankle_up_list), 2) if right_ankle_up_list else 0,
+        "avg_left_ankle_down": round(np.mean(left_ankle_down_list), 2) if left_ankle_down_list else 0,
+        "avg_right_ankle_down": round(np.mean(right_ankle_down_list), 2) if right_ankle_down_list else 0
     }
-    return summary, image_paths, out_path, csv_path
 
-analyze_video("YOUR_VIDEO_PATH.mp4")
+    return result_summary, graph_image_path, annotated_video_path, csv_output_path
+
+analyze_video("Your video path here")
