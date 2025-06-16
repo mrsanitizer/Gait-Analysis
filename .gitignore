@@ -1,0 +1,23 @@
+# Personal files
+NeuroVision-dev/
+Allotment/
+
+# IDEs
+.vscode/
+
+# Bytecode
+__pycache__/
+
+# Personal data files
+*.csv
+*.png
+
+# Private video files
+*.mp4
+
+# Private python files
+*.py
+*.ipynb
+
+# Allow one python file to be tracked
+!function.py
