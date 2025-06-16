@@ -6,6 +6,7 @@ def analyze_video(video_path):
     import matplotlib.pyplot as plt
     import os
     import csv
+    from datetime import datetime
 
     def hip_flexion(hips, knees):
         l1 = hips[1] - knees[1]
@@ -69,7 +70,11 @@ def analyze_video(video_path):
 
     # Annotated video writer setup
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    annotated_video_path = os.path.join(os.path.dirname(video_path), "annotated_output.mp4")
+    now = datetime.now()
+    timestamp_str = now.strftime("%Y%m%d_%H%M")
+    annotated_video_path = os.path.join(
+        os.path.dirname(video_path), f"annotated_output_{timestamp_str}.mp4"
+    )
     fps = cap.get(cv2.CAP_PROP_FPS)
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
