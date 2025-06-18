@@ -30,6 +30,19 @@ These angles are useful for applications in:
 
 ```bash
 git clone https://github.com/Lifespark-Technologies/neuro_vision_new.git
-cd lower_body
+```
+
+### 2. Move into the directory
+```bash
+git cd lower_body
+```
+
+### 3. Install the requirements
+```bash
 pip install -r requirements.txt
+```
+
+### 4. Run the script
+```bash
 python function.py
+```
