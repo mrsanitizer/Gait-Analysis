@@ -34,7 +34,7 @@ git clone https://github.com/Lifespark-Technologies/neuro_vision_new.git
 
 ### 2. Move into the directory
 ```bash
-git cd lower_body
+cd lower_body
 ```
 
 ### 3. Install the requirements
