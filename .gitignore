@@ -15,6 +15,7 @@ __pycache__/
 # Private video and image files
 *.mp4
 *.jpg
+*.jpeg
 
 # Private python files
 *.py
