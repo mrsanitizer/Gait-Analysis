@@ -12,8 +12,9 @@ __pycache__/
 *.csv
 *.png
 
-# Private video files
+# Private video and image files
 *.mp4
+*.jpg
 
 # Private python files
 *.py
