@@ -3,7 +3,7 @@ from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import threading
 import os
-from function2 import analyze_video
+from function import analyze_video
 
 
 class VideoAnalysisApp(tk.Tk):
@@ -87,7 +87,7 @@ class VideoAnalysisApp(tk.Tk):
 
     def run_analysis(self):
         try:
-            results, graph_path, annotated_video_path = analyze_video(self.video_path)
+            results, graph_path, annotated_video_path, csv_output_path = analyze_video(self.video_path)
         except Exception as e:
             self.status_label.config(text="Error during analysis.")
             messagebox.showerror("Error", f"Failed to analyze video:\n{e}")
