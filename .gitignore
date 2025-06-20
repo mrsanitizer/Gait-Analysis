@@ -23,3 +23,4 @@ __pycache__/
 
 # Allow one python file to be tracked
 !function.py
+!gui.py
