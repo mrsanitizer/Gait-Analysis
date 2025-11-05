@@ -229,4 +229,4 @@ def analyze_video(video_path):
 
     return result_summary, graph_image_path, annotated_video_path, csv_output_path
 
-analyze_video("Your video path here")
+analyze_video("C:/Users/arcri/Downloads/VID_20250612_113024049.mp4")
