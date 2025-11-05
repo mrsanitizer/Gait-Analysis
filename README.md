@@ -2,7 +2,7 @@
 
 **NeuroVision** is a growing collection of computer vision tools focused on analyzing human movement, posture, and physiology through video and pose data.
 
-This repository is intended as a modular platform for developing and testing vision-based biomechanical analytics — from joint angle estimation to eye tracking and gait analysis.
+This repository is intended as a modular platform for developing and testing vision-based biomechanical analytics — from joint angle estimation to eye tracking and gait analysis using googles open source machine learning framework mediapipe.
 
 ---
 
@@ -45,4 +45,5 @@ pip install -r requirements.txt
 ### 4. Run the script
 ```bash
 python function.py
+
 ```
