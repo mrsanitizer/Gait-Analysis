@@ -1,4 +1,4 @@
-# 🧠 NeuroVision
+# NeuroVision
 
 **NeuroVision** is a growing collection of computer vision tools focused on analyzing human movement, posture, and physiology through video and pose data.
 
@@ -6,7 +6,7 @@ This repository is intended as a modular platform for developing and testing vis
 
 ---
 
-## 📌 Current Project
+## Current Project
 
 ### 🦿 Joint Angle Measurement (`function.py`)
 
@@ -24,7 +24,7 @@ These angles are useful for applications in:
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Clone the Repository
 
