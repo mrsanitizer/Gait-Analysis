@@ -53,6 +53,7 @@ uv pip install -r requirements.lock
 Launch the graphical interface:
 
 ```bash
+cd lower_body
 python gui.py
 ```
 Select the "example_vid.mp4" file, wait for few seconds! The output will be saved in the folder <output_filename>
