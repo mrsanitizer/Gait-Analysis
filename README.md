@@ -29,7 +29,7 @@ These angles are useful for applications in:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Lifespark-Technologies/neuro_vision_new.git
+git clone https://github.com/mrsanitizer/Gait-Analysis.git
 ```
 
 ### 2. Move into the directory
