@@ -1,49 +1,58 @@
-# NeuroVision
+# NeuroVision: Lower Body Kinematics
 
-**NeuroVision** is a growing collection of computer vision tools focused on analyzing human movement, posture, and physiology through video and pose data.
+NeuroVision is a computer vision tool for analyzing human movement. This module extracts and processes lower-body joint angles from standard video using MediaPipe pose estimation.
 
-This repository is intended as a modular platform for developing and testing vision-based biomechanical analytics — from joint angle estimation to eye tracking and gait analysis using googles open source machine learning framework mediapipe.
+## Features
 
----
+* **Kinematic Tracking:** Calculates bilateral hip flexion, knee flexion, dorsiflexion, and plantarflexion over time.
+* **Cross-Platform GUI:** Built-in graphical interface for video processing and native annotated playback.
+* **Data Export:** Automatically generates time-series plots (`.png`) and raw frame-by-frame data (`.csv`).
+* **Deterministic Environment:** Uses `uv` and strict dependency locking for guaranteed reproducibility across Linux, macOS, and Windows.
 
-## Current Project
+## Setup
 
-### 🦿 Joint Angle Measurement (`function.py`)
+This project uses `uv` for rapid, reproducible environment management.
 
-This initial project calculates key lower-body joint angles based on pose estimation data:
-
-- **Knee Flexion**
-- **Hip Flexion**
-- **Dorsiflexion**
-- **Plantarflexion**
-
-These angles are useful for applications in:
-- Physiotherapy & rehabilitation
-- Sports science
-- Motion analysis research
-
----
-
-## Getting Started
-
-### 1. Clone the Repository
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/mrsanitizer/Gait-Analysis.git
+cd Gait-Analysis
 ```
 
-### 2. Move into the directory
+### 2. Create the virtual environment
+
+This project strictly requires Python 3.11, which is automatically enforced by the `.python-version` file.
+
 ```bash
-cd lower_body
+uv venv
 ```
 
-### 3. Install the requirements
+### 3. Activate the environment
+
+**Linux/macOS**
+
 ```bash
-pip install -r requirements.txt
+source .venv/bin/activate
 ```
 
-### 4. Run the script
+**Windows**
+
 ```bash
-python function.py
-
+.venv\Scripts\activate
 ```
+
+### 4. Install the locked dependencies
+
+```bash
+uv pip install -r requirements.lock
+```
+
+## Usage
+
+Launch the graphical interface:
+
+```bash
+python gui.py
+```
+Select the "example_vid.mp4" file, wait for few seconds! The output will be saved in the folder <output_filename>
